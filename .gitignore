@@ -1,0 +1,6 @@
+/dist/
+/node_modules/
+./migrate-cognito-user-pool.zip
+
+package-lock.json
+migrate-cognito-user-pool.zip
