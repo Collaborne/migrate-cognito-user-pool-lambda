@@ -1,5 +1,7 @@
 # migrate-cognito-user-pool-lambda
 
+See this [blog post](https://medium.com/collaborne-engineering/migrate-aws-cognito-user-pools-ff2a91a745a2?sk=f91b73b84396db6f41a294f54bfeb2db) for a description
+
 ## Usage
 
 Follow these steps to use the migration Lambda function:
