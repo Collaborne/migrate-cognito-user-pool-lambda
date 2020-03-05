@@ -6,14 +6,21 @@ See this [blog post](https://medium.com/collaborne-engineering/migrate-aws-cogni
 
 Follow these steps to use the migration Lambda function:
 
-1. Adjust the constants for `AWS_REGION`, `OLD_USER_POOL_ID`, and `OLD_CLIENT_ID` in [index.ts](src/index.ts).
+1. Create a new user pool client in the old user pool
+   This client must have the OAuth flow `ALLOW_ADMIN_USER_PASSWORD_AUTH` enabled.
 
-2. Enable OAuth flow `ALLOW_ADMIN_USER_PASSWORD_AUTH` for the client of the old User Pool
+2. Configure all clients in the new user pool that are allowed to trigger user migration
+   These clients must use the OAuth flow `USER_PASSWORD_AUTH`.
 
-3. Enable OAuth flow `ALLOW_USER_PASSWORD_AUTH` for the client of new User Pool
+3. Build the lambda source code
+
+   ```bash
+   npm install && npm run build
+   ```
 
 4. Create in Lambda function in the AWS console
 
-5. Grant to the Lambda function the permission to execute action `Allow: cognito-idp:AdminGetUser` and `Allow: cognito-idp:AdminInitiateAuth`
+   * Grant the permission to execute action `Allow: cognito-idp:AdminGetUser` and `Allow: cognito-idp:AdminInitiateAuth`
+   * Configure the `AWS_REGION`, `OLD_USER_POOL_ID`, and `OLD_CLIENT_ID` environment variables
 
-6. Configure the trigger _User Migration_ for the new User Pool to call the migration lambda function
+5. Configure the trigger _User Migration_ for the new User Pool to call the migration lambda function
