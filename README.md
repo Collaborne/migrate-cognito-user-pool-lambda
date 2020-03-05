@@ -21,6 +21,6 @@ Follow these steps to use the migration Lambda function:
 4. Create in Lambda function in the AWS console
 
    * Grant the permission to execute action `Allow: cognito-idp:AdminGetUser` and `Allow: cognito-idp:AdminInitiateAuth`
-   * Configure the `AWS_REGION`, `OLD_USER_POOL_ID`, and `OLD_CLIENT_ID` environment variables
+   * Configure the `OLD_USER_POOL_REGION`, `OLD_USER_POOL_ID`, and `OLD_CLIENT_ID` environment variables
 
 5. Configure the trigger _User Migration_ for the new User Pool to call the migration lambda function

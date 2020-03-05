@@ -8,7 +8,7 @@ import { LambdaCallback } from './types/callback';
 /**
  * AWS region in which your User Pools are deployed
  */
-const AWS_REGION = process.env.AWS_REGION;
+const OLD_USER_POOL_REGION = process.env.OLD_USER_POOL_REGION || process.env.AWS_REGION;
 
 /**
  * ID of the old User Pool from which you want to migrate users
@@ -26,7 +26,7 @@ interface User {
 }
 
 const cognitoIdentityServiceProvider = new CognitoIdentityServiceProvider({
-	region: AWS_REGION,
+	region: OLD_USER_POOL_REGION,
 });
 
 async function authenticateUser(username: string, password: string): Promise<User | undefined> {
