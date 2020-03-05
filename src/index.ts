@@ -8,17 +8,17 @@ import { LambdaCallback } from './types/callback';
 /**
  * AWS region in which your User Pools are deployed
  */
-const AWS_REGION = '<ADD VALUE>';
+const AWS_REGION = process.env.AWS_REGION;
 
 /**
  * ID of the old User Pool from which you want to migrate users
  */
-const OLD_USER_POOL_ID = '<ADD VALUE>';
+const OLD_USER_POOL_ID: string = process.env.OLD_USER_POOL_ID || '<OLD_USER_POOL_ID>';
 
 /**
  * Client ID in the old User Pool from which you want to migrate users.
  */
-const OLD_CLIENT_ID = '<ADD VALUE>';
+const OLD_CLIENT_ID: string = process.env.OLD_CLIENT_ID || '<OLD_CLIENT_ID>';
 
 interface User {
 	userAttributes: {[key: string]: string | undefined};
