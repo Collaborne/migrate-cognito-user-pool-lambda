@@ -2,8 +2,6 @@ import { AWSError, CognitoIdentityServiceProvider } from 'aws-sdk';
 import { AdminInitiateAuthRequest } from 'aws-sdk/clients/cognitoidentityserviceprovider';
 
 import { CognitoEvent, UserMigrationAuthenticationEvent, UserMigrationForgotPasswordEvent } from './types/event';
-import { LambdaContext } from './types/context';
-import { LambdaCallback } from './types/callback';
 
 /**
  * AWS region in which your User Pools are deployed
@@ -78,13 +76,11 @@ async function lookupUser(username: string): Promise<User | undefined> {
 	return user;
 }
 
-async function onUserMigrationAuthentication(event: UserMigrationAuthenticationEvent, context: LambdaContext, callback: LambdaCallback) {
+async function onUserMigrationAuthentication(event: UserMigrationAuthenticationEvent) {
 	// authenticate the user with your existing user directory service
 	const user = await authenticateUser(event.userName, event.request.password);
 	if (!user) {
-		// Return error to Amazon Cognito
-		callback('Bad password');
-		return;
+		throw new Error('Bad credentials');
 	}
 
 	event.response.userAttributes = {
@@ -96,18 +92,16 @@ async function onUserMigrationAuthentication(event: UserMigrationAuthenticationE
 	};
 	event.response.finalUserStatus = 'CONFIRMED';
 	event.response.messageAction = 'SUPPRESS';
-	context.succeed(event);
 
 	console.log(`Authentication - response: ${JSON.stringify(event.response)}`);
+	return event;
 }
 
-async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordEvent, context: LambdaContext, callback: LambdaCallback) {
+async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordEvent) {
 	// Lookup the user in your existing user directory service
 	const user = await lookupUser(event.userName);
 	if (!user) {
-		// Return error to Amazon Cognito
-		callback('Bad password');
-		return;
+		throw new Error('Bad credentials');
 	}
 
 	event.response.userAttributes = {
@@ -121,17 +115,16 @@ async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordE
 
 	console.log(`Forgot password - response: ${JSON.stringify(event.response)}`);
 
-	context.succeed(event);
+	return event;
 }
 
-export const handler = async (event: CognitoEvent, context: LambdaContext, callback: LambdaCallback): Promise<any> => {
+export const handler = async (event: CognitoEvent): Promise<CognitoEvent> => {
 	switch (event.triggerSource) {
 		case 'UserMigration_Authentication':
-			return onUserMigrationAuthentication(event, context, callback);
+			return onUserMigrationAuthentication(event);
 		case 'UserMigration_ForgotPassword':
-			return onUserMigrationForgotPassword(event, context, callback);
+			return onUserMigrationForgotPassword(event);
 		default:
-			// Return error to Amazon Cognito
-			callback(`Bad triggerSource ${event.triggerSource}`);
+			throw new Error(`Bad triggerSource ${event.triggerSource}`);
 	}
 }
