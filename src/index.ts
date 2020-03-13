@@ -1,7 +1,6 @@
+import { CognitoUserPoolTriggerEvent } from 'aws-lambda';
 import { AWSError, CognitoIdentityServiceProvider } from 'aws-sdk';
 import { AdminInitiateAuthRequest } from 'aws-sdk/clients/cognitoidentityserviceprovider';
-
-import { CognitoEvent, UserMigrationAuthenticationEvent, UserMigrationForgotPasswordEvent } from './types/event';
 
 /**
  * AWS region in which your User Pools are deployed
@@ -76,9 +75,9 @@ async function lookupUser(username: string): Promise<User | undefined> {
 	return user;
 }
 
-async function onUserMigrationAuthentication(event: UserMigrationAuthenticationEvent) {
+async function onUserMigrationAuthentication(event: CognitoUserPoolTriggerEvent) {
 	// authenticate the user with your existing user directory service
-	const user = await authenticateUser(event.userName, event.request.password);
+	const user = await authenticateUser(event.userName!, event.request.password!);
 	if (!user) {
 		throw new Error('Bad credentials');
 	}
@@ -86,9 +85,9 @@ async function onUserMigrationAuthentication(event: UserMigrationAuthenticationE
 	event.response.userAttributes = {
 		// old_username: user.userName,
 		// 'custom:tenant': user.userAttributes['custom:tenant'],
-		email: user.userAttributes.email,
+		email: user.userAttributes.email!,
 		email_verified: 'true',
-		preferred_username: user.userAttributes.preferred_username,
+		preferred_username: user.userAttributes.preferred_username!,
 	};
 	event.response.finalUserStatus = 'CONFIRMED';
 	event.response.messageAction = 'SUPPRESS';
@@ -97,9 +96,9 @@ async function onUserMigrationAuthentication(event: UserMigrationAuthenticationE
 	return event;
 }
 
-async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordEvent) {
+async function onUserMigrationForgotPassword(event: CognitoUserPoolTriggerEvent) {
 	// Lookup the user in your existing user directory service
-	const user = await lookupUser(event.userName);
+	const user = await lookupUser(event.userName!);
 	if (!user) {
 		throw new Error('Bad credentials');
 	}
@@ -107,9 +106,9 @@ async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordE
 	event.response.userAttributes = {
 		// old_username: user.userName,
 		// 'custom:tenant': user.userAttributes['custom:tenant'],
-		email: user.userAttributes.email,
+		email: user.userAttributes.email!,
 		email_verified: 'true',
-		preferred_username: user.userAttributes.preferred_username,
+		preferred_username: user.userAttributes.preferred_username!,
 	};
 	event.response.messageAction = 'SUPPRESS';
 
@@ -118,7 +117,7 @@ async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordE
 	return event;
 }
 
-export const handler = async (event: CognitoEvent): Promise<CognitoEvent> => {
+export const handler = async (event: CognitoUserPoolTriggerEvent): Promise<CognitoUserPoolTriggerEvent> => {
 	switch (event.triggerSource) {
 		case 'UserMigration_Authentication':
 			return onUserMigrationAuthentication(event);

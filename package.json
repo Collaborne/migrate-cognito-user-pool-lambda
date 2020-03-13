@@ -10,6 +10,7 @@
 	},
 	"license": "Apache-2.0",
 	"dependencies": {
+		"@types/aws-lambda": "^8.10.46",
 		"@types/node": "^12.12.15",
 		"aws-sdk": "^2.585.0"
 	}
