@@ -1,5 +1,5 @@
-import { CognitoUserPoolTriggerEvent } from 'aws-lambda';
-import { AWSError, CognitoIdentityServiceProvider } from 'aws-sdk';
+import { CognitoUserPoolTriggerEvent, Context } from 'aws-lambda';
+import { AWSError, CognitoIdentityServiceProvider, ChainableTemporaryCredentials } from 'aws-sdk';
 import { AdminInitiateAuthRequest } from 'aws-sdk/clients/cognitoidentityserviceprovider';
 
 /**
@@ -17,16 +17,15 @@ const OLD_USER_POOL_ID: string = process.env.OLD_USER_POOL_ID || '<OLD_USER_POOL
  */
 const OLD_CLIENT_ID: string = process.env.OLD_CLIENT_ID || '<OLD_CLIENT_ID>';
 
+const OLD_ROLE_ARN: string | undefined = process.env.OLD_ROLE_ARN;
+const OLD_EXTERNAL_ID: string | undefined = process.env.OLD_EXTERNAL_ID;
+
 interface User {
 	userAttributes: {[key: string]: string | undefined};
 	userName: string;
 }
 
-const cognitoIdentityServiceProvider = new CognitoIdentityServiceProvider({
-	region: OLD_USER_POOL_REGION,
-});
-
-async function authenticateUser(username: string, password: string): Promise<User | undefined> {
+async function authenticateUser(cognitoISP: CognitoIdentityServiceProvider, username: string, password: string): Promise<User | undefined> {
 	console.log(`authenticateUser: user='${username}'`);
 
 	const params: AdminInitiateAuthRequest = {
@@ -38,7 +37,7 @@ async function authenticateUser(username: string, password: string): Promise<Use
 		ClientId: OLD_CLIENT_ID,
 		UserPoolId: OLD_USER_POOL_ID,
 	};
-	const cognitoResponse = await cognitoIdentityServiceProvider.adminInitiateAuth(params).promise();
+	const cognitoResponse = await cognitoISP.adminInitiateAuth(params).promise();
 	const awsError: AWSError = cognitoResponse as any as AWSError;
 	if (awsError.code && awsError.message) {
 		console.log(`authenticateUser: error ${JSON.stringify(awsError)}`);
@@ -46,16 +45,16 @@ async function authenticateUser(username: string, password: string): Promise<Use
 	}
 	console.log(`authenticateUser: found ${JSON.stringify(cognitoResponse)}`);
 
-	return lookupUser(username);
+	return lookupUser(cognitoISP, username);
 }
 
-async function lookupUser(username: string): Promise<User | undefined> {
+async function lookupUser(cognitoISP: CognitoIdentityServiceProvider, username: string): Promise<User | undefined> {
 	console.log(`lookupUser: user='${username}'`);
 	const params = {
 		UserPoolId: OLD_USER_POOL_ID,
 		Username: username,
 	};
-	const cognitoResponse = await cognitoIdentityServiceProvider.adminGetUser(params).promise();
+	const cognitoResponse = await cognitoISP.adminGetUser(params).promise();
 	const awsError: AWSError = cognitoResponse as any as AWSError;
 	if (awsError.code && awsError.message) {
 		console.log(`lookupUser: error ${JSON.stringify(awsError)}`);
@@ -75,9 +74,9 @@ async function lookupUser(username: string): Promise<User | undefined> {
 	return user;
 }
 
-async function onUserMigrationAuthentication(event: CognitoUserPoolTriggerEvent) {
+async function onUserMigrationAuthentication(cognitoISP: CognitoIdentityServiceProvider, event: CognitoUserPoolTriggerEvent) {
 	// authenticate the user with your existing user directory service
-	const user = await authenticateUser(event.userName!, event.request.password!);
+	const user = await authenticateUser(cognitoISP, event.userName!, event.request.password!);
 	if (!user) {
 		throw new Error('Bad credentials');
 	}
@@ -96,9 +95,9 @@ async function onUserMigrationAuthentication(event: CognitoUserPoolTriggerEvent)
 	return event;
 }
 
-async function onUserMigrationForgotPassword(event: CognitoUserPoolTriggerEvent) {
+async function onUserMigrationForgotPassword(cognitoISP: CognitoIdentityServiceProvider, event: CognitoUserPoolTriggerEvent) {
 	// Lookup the user in your existing user directory service
-	const user = await lookupUser(event.userName!);
+	const user = await lookupUser(cognitoISP, event.userName!);
 	if (!user) {
 		throw new Error('Bad credentials');
 	}
@@ -117,12 +116,26 @@ async function onUserMigrationForgotPassword(event: CognitoUserPoolTriggerEvent)
 	return event;
 }
 
-export const handler = async (event: CognitoUserPoolTriggerEvent): Promise<CognitoUserPoolTriggerEvent> => {
+export const handler = async (event: CognitoUserPoolTriggerEvent, context: Context): Promise<CognitoUserPoolTriggerEvent> => {
+	const options: CognitoIdentityServiceProvider.Types.ClientConfiguration = {
+		region: OLD_USER_POOL_REGION,
+	};
+	if (OLD_ROLE_ARN) {
+		options.credentials = new ChainableTemporaryCredentials({
+			params: {
+				ExternalId: OLD_EXTERNAL_ID,
+				RoleArn: OLD_ROLE_ARN,
+				RoleSessionName: context.awsRequestId,
+			},
+		});
+	}
+	const cognitoIdentityServiceProvider = new CognitoIdentityServiceProvider(options);
+
 	switch (event.triggerSource) {
 		case 'UserMigration_Authentication':
-			return onUserMigrationAuthentication(event);
+			return onUserMigrationAuthentication(cognitoIdentityServiceProvider, event);
 		case 'UserMigration_ForgotPassword':
-			return onUserMigrationForgotPassword(event);
+			return onUserMigrationForgotPassword(cognitoIdentityServiceProvider, event);
 		default:
 			throw new Error(`Bad triggerSource ${event.triggerSource}`);
 	}
