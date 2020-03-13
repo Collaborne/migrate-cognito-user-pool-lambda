@@ -6,11 +6,11 @@
 		"build": "tsc && (cd dist/ && zip -r ../migrate-cognito-user-pool.zip *)"
 	},
 	"devDependencies": {
-		"@types/node": "^12.12.15",
 		"typescript": "^3.7.3"
 	},
 	"license": "Apache-2.0",
 	"dependencies": {
+		"@types/node": "^12.12.15",
 		"aws-sdk": "^2.585.0"
 	}
 }
