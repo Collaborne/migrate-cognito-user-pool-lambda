@@ -81,45 +81,47 @@ async function lookupUser(username: string): Promise<User | undefined> {
 async function onUserMigrationAuthentication(event: UserMigrationAuthenticationEvent, context: LambdaContext, callback: LambdaCallback) {
 	// authenticate the user with your existing user directory service
 	const user = await authenticateUser(event.userName, event.request.password);
-	if (user) {
-		event.response.userAttributes = {
-			// old_username: user.userName,
-			// 'custom:tenant': user.userAttributes['custom:tenant'],
-			email: user.userAttributes.email,
-			email_verified: 'true',
-			preferred_username: user.userAttributes.preferred_username,
-		};
-		event.response.finalUserStatus = 'CONFIRMED';
-		event.response.messageAction = 'SUPPRESS';
-		context.succeed(event);
-
-		console.log(`Authentication - response: ${JSON.stringify(event.response)}`);
-	} else {
+	if (!user) {
 		// Return error to Amazon Cognito
 		callback('Bad password');
+		return;
 	}
+
+	event.response.userAttributes = {
+		// old_username: user.userName,
+		// 'custom:tenant': user.userAttributes['custom:tenant'],
+		email: user.userAttributes.email,
+		email_verified: 'true',
+		preferred_username: user.userAttributes.preferred_username,
+	};
+	event.response.finalUserStatus = 'CONFIRMED';
+	event.response.messageAction = 'SUPPRESS';
+	context.succeed(event);
+
+	console.log(`Authentication - response: ${JSON.stringify(event.response)}`);
 }
 
 async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordEvent, context: LambdaContext, callback: LambdaCallback) {
 	// Lookup the user in your existing user directory service
 	const user = await lookupUser(event.userName);
-	if (user) {
-		event.response.userAttributes = {
-			// old_username: user.userName,
-			// 'custom:tenant': user.userAttributes['custom:tenant'],
-			email: user.userAttributes.email,
-			email_verified: 'true',
-			preferred_username: user.userAttributes.preferred_username,
-		};
-		event.response.messageAction = 'SUPPRESS';
-
-		console.log(`Forgot password - response: ${JSON.stringify(event.response)}`);
-
-		context.succeed(event);
-	} else {
+	if (!user) {
 		// Return error to Amazon Cognito
 		callback('Bad password');
+		return;
 	}
+
+	event.response.userAttributes = {
+		// old_username: user.userName,
+		// 'custom:tenant': user.userAttributes['custom:tenant'],
+		email: user.userAttributes.email,
+		email_verified: 'true',
+		preferred_username: user.userAttributes.preferred_username,
+	};
+	event.response.messageAction = 'SUPPRESS';
+
+	console.log(`Forgot password - response: ${JSON.stringify(event.response)}`);
+
+	context.succeed(event);
 }
 
 export const handler = async (event: CognitoEvent, context: LambdaContext, callback: LambdaCallback): Promise<any> => {
