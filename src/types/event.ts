@@ -18,4 +18,8 @@ export interface UserMigrationForgotPasswordEvent extends BaseCognitoEvent {
 		password: string;
 	};
 }
+
+/**
+ * See {@link https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-lambda-migrate-user.html#cognito-user-pools-lambda-trigger-syntax-user-migration Migrate User Lambda Trigger Parameters}
+ */
 export type CognitoEvent = UserMigrationAuthenticationEvent | UserMigrationForgotPasswordEvent;
