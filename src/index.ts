@@ -30,7 +30,7 @@ const cognitoIdentityServiceProvider = new CognitoIdentityServiceProvider({
 });
 
 async function authenticateUser(username: string, password: string): Promise<User | undefined> {
-	console.log(`authenticateUser: user='${username}', pass='${password}'`);
+	console.log(`authenticateUser: user='${username}'`);
 
 	const params: AdminInitiateAuthRequest = {
 		AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
