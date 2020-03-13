@@ -125,9 +125,9 @@ async function onUserMigrationForgotPassword(event: UserMigrationForgotPasswordE
 export const handler = async (event: CognitoEvent, context: LambdaContext, callback: LambdaCallback): Promise<any> => {
 	switch (event.triggerSource) {
 		case 'UserMigration_Authentication':
-			return await onUserMigrationAuthentication(event, context, callback);
+			return onUserMigrationAuthentication(event, context, callback);
 		case 'UserMigration_ForgotPassword':
-			return await onUserMigrationForgotPassword(event, context, callback);
+			return onUserMigrationForgotPassword(event, context, callback);
 		default:
 			// Return error to Amazon Cognito
 			callback(`Bad triggerSource ${event.triggerSource}`);
