@@ -28,50 +28,50 @@ interface User {
 async function authenticateUser(cognitoISP: CognitoIdentityServiceProvider, username: string, password: string): Promise<User | undefined> {
 	console.log(`authenticateUser: user='${username}'`);
 
-	const params: AdminInitiateAuthRequest = {
-		AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
-		AuthParameters: {
-			PASSWORD: password,
-			USERNAME: username,
-		},
-		ClientId: OLD_CLIENT_ID,
-		UserPoolId: OLD_USER_POOL_ID,
-	};
-	const cognitoResponse = await cognitoISP.adminInitiateAuth(params).promise();
-	const awsError: AWSError = cognitoResponse as any as AWSError;
-	if (awsError.code && awsError.message) {
-		console.log(`authenticateUser: error ${JSON.stringify(awsError)}`);
+	try {
+		const params: AdminInitiateAuthRequest = {
+			AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+			AuthParameters: {
+				PASSWORD: password,
+				USERNAME: username,
+			},
+			ClientId: OLD_CLIENT_ID,
+			UserPoolId: OLD_USER_POOL_ID,
+		};
+		const cognitoResponse = await cognitoISP.adminInitiateAuth(params).promise();
+		console.log(`authenticateUser: found ${JSON.stringify(cognitoResponse)}`);
+		return lookupUser(cognitoISP, username);
+	} catch (err) {
+		console.log(`authenticateUser: error ${JSON.stringify(err)}`);
 		return undefined;
 	}
-	console.log(`authenticateUser: found ${JSON.stringify(cognitoResponse)}`);
-
-	return lookupUser(cognitoISP, username);
 }
 
 async function lookupUser(cognitoISP: CognitoIdentityServiceProvider, username: string): Promise<User | undefined> {
 	console.log(`lookupUser: user='${username}'`);
-	const params = {
-		UserPoolId: OLD_USER_POOL_ID,
-		Username: username,
-	};
-	const cognitoResponse = await cognitoISP.adminGetUser(params).promise();
-	const awsError: AWSError = cognitoResponse as any as AWSError;
-	if (awsError.code && awsError.message) {
-		console.log(`lookupUser: error ${JSON.stringify(awsError)}`);
+
+	try {
+		const params = {
+			UserPoolId: OLD_USER_POOL_ID,
+			Username: username,
+		};
+		const cognitoResponse = await cognitoISP.adminGetUser(params).promise();
+		console.log(`lookupUser: found ${JSON.stringify(cognitoResponse)}`);
+
+		const userAttributes = cognitoResponse.UserAttributes ? cognitoResponse.UserAttributes.reduce((acc, entry) => ({
+			...acc,
+			[entry.Name]: entry.Value,
+		}), {} as {[key: string]: string | undefined}) : {};
+		const user: User = {
+			userAttributes,
+			userName: cognitoResponse.Username,
+		};
+		console.log(`lookupUser: response ${JSON.stringify(user)}`);
+		return user;
+	} catch (err) {
+		console.log(`lookupUser: error ${JSON.stringify(err)}`);
 		return undefined;
 	}
-	console.log(`lookupUser: found ${JSON.stringify(cognitoResponse)}`);
-
-	const userAttributes = cognitoResponse.UserAttributes ? cognitoResponse.UserAttributes.reduce((acc, entry) => ({
-		...acc,
-		[entry.Name]: entry.Value,
-	}), {} as {[key: string]: string | undefined}) : {};
-	const user: User = {
-		userAttributes,
-		userName: cognitoResponse.Username,
-	};
-	console.log(`lookupUser: response ${JSON.stringify(user)}`);
-	return user;
 }
 
 async function onUserMigrationAuthentication(cognitoISP: CognitoIdentityServiceProvider, event: CognitoUserPoolTriggerEvent) {
