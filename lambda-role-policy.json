@@ -1,0 +1,14 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "cognito-idp:AdminInitiateAuth",
+                "cognito-idp:AdminGetUser"
+            ],
+            "Resource": "arn:aws:cognito-idp:XXXXXXXXXXX"
+        }
+    ]
+}
