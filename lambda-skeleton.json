@@ -1,11 +1,8 @@
 {
     "FunctionName": "test-migration-cognitio",
     "Runtime": "nodejs14.x",
-    "Role": "ROLE_ARN",
+    "Role": "ROLE_ARN-XXXXXX",
     "Handler": "index.handler",
-    "Code": {
-        "ZipFile": "fileb://migrate-cognito-user-pool.zip"
-    },
     "Description": "Migrate users from an Older Cognito to Newer Cognito",
     "Timeout": 3,
     "MemorySize": 128,
