@@ -41,9 +41,15 @@ This reduces the need to navigate around AWS Console which is always in flux and
 Ensure that in cognito > new user pool > App Clients > Client being used for login
 that Security configuration > Prevent User Existence Errors is set to legacy recommended https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-managing-errors.html
 
-This kicks in the lambda workflow that allows the migration lambda function to execute when a login failure occurs.
-Without this, the lambda function will not get called and will not execute.
+Cognito requires the user pool client Security Configuration > Prevent User Existence Errors is set to Legacy for migration lambdas to executed when a login failure occurs.
+This can be accomplished with
 
+```bash
+aws cognito-idp update-user-pool-client \
+   --user-pool-id <NEW_USER_POOL_ID> \
+   --client-id <NEW_USER_POOL_CLIENT_ID> \
+   --prevent-user-existence-errors LEGACY
+```
 
 Maintain a txt list of the following variables as you work your way through this
 * `OLD_USER_POOL_ID` - the pool id you are migrating *from* (us-east-2_xyzABC)
