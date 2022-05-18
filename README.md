@@ -38,6 +38,18 @@ Follow these steps to use the migration Lambda function:
 
 If you wish to use [AWS CLI](https://docs.aws.amazon.com/cli/latest/)
 This reduces the need to navigate around AWS Console which is always in flux and not the easiest to figure out.
+Ensure that in cognito > new user pool > App Clients > Client being used for login
+that Security configuration > Prevent User Existence Errors is set to legacy recommended https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-managing-errors.html
+
+Cognito requires the user pool client Security Configuration > Prevent User Existence Errors is set to Legacy for migration lambdas to executed when a login failure occurs.
+This can be accomplished with
+
+```bash
+aws cognito-idp update-user-pool-client \
+   --user-pool-id <NEW_USER_POOL_ID> \
+   --client-id <NEW_USER_POOL_CLIENT_ID> \
+   --prevent-user-existence-errors LEGACY
+```
 
 Maintain a txt list of the following variables as you work your way through this
 * `OLD_USER_POOL_ID` - the pool id you are migrating *from* (us-east-2_xyzABC)
@@ -94,7 +106,7 @@ Note the Arn returned from the command `POLICY_ARN`
       --user-pool-id XXXXXXXX \
       --client-name lambda-migration-client \
       --no-generate-secret \
-      --explicit-auth-flows "ALLOW_USER_PASSWORD_AUTH" "ALLOW_ADMIN_USER_PASSWORD_AUTH""
+      --explicit-auth-flows "ALLOW_USER_PASSWORD_AUTH" "ALLOW_ADMIN_USER_PASSWORD_AUTH" "ALLOW_REFRESH_TOKEN_AUTH"
 ```
 
 5. Create lambda function
@@ -112,7 +124,7 @@ Note the Arn returned from the command `POLICY_ARN`
    * Deploy it
      * Note the Arn returned from this, this is your `LAMBDA_ARN`
 ```bash
-   aws lambda create-function --cli-input-json file://lambda-skeleton.json
+   aws lambda create-function --cli-input-json file://lambda-skeleton.json --zip-file fileb://migrate-cognito-user-pool.zip 
 ```
 
 6. Attach lambda to new user pool
